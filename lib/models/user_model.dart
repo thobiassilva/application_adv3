@@ -33,7 +33,6 @@ class User {
 
   Map<String, dynamic> toMap() {
     return {
-      'id': id,
       'nome': nome,
       'email': email,
       'cpf': cpf,
@@ -68,4 +67,9 @@ class User {
   String toJson() => json.encode(toMap());
 
   factory User.fromJson(String source) => User.fromMap(json.decode(source));
+
+  @override
+  String toString() {
+    return 'User(id: $id, nome: $nome, email: $email, cpf: $cpf, cep: $cep, rua: $rua, numero: $numero, bairro: $bairro, cidade: $cidade, uf: $uf, pais: $pais, pathImage: $pathImage)';
+  }
 }

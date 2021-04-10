@@ -1,6 +1,5 @@
+import 'package:application_adv3/pages/login_page.dart';
 import 'package:flutter/material.dart';
-import 'pages/home_page.dart';
-import 'pages/login_page.dart';
 
 void main() {
   runApp(
@@ -12,10 +11,7 @@ void main() {
         accentColor: Colors.blueAccent,
         primaryColor: Colors.blue,
       ),
-      routes: {
-        '/': (_) => LoginPage(),
-        '/home-page': (_) => HomePage(),
-      },
+      home: LoginPage(),
     ),
   );
 }

@@ -1,3 +1,4 @@
+import 'package:application_adv3/pages/home_page.dart';
 import 'package:email_validator/email_validator.dart';
 import 'package:flutter/material.dart';
 
@@ -96,8 +97,12 @@ class _LoginPageState extends State<LoginPage> {
                             isLoading = true;
                           });
                           if (doLogin())
-                            Navigator.of(context)
-                                .pushReplacementNamed('/home-page');
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => HomePage(),
+                              ),
+                            );
                         },
                         child: Text('Entrar'),
                         style: ElevatedButton.styleFrom(

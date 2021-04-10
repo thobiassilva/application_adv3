@@ -1,7 +1,9 @@
 import 'dart:io';
+import 'package:application_adv3/data/db.dart';
+import 'package:application_adv3/data/repository.dart';
 import 'package:application_adv3/models/user_model.dart';
-import 'package:application_adv3/service.dart';
-import 'package:dio/dio.dart';
+import 'package:application_adv3/data/service.dart';
+import 'package:application_adv3/pages/home_page.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:brasil_fields/brasil_fields.dart';
 import 'package:email_validator/email_validator.dart';
@@ -30,13 +32,12 @@ class _ProfilePageState extends State<ProfilePage> {
   final cidadeController = TextEditingController();
   final ufController = TextEditingController();
 
-  User? user = User.empty();
+  final repository = Repository(MyDatabase());
 
-  File image = File('');
-  bool isTemPhoto = false;
+  User? user = User.empty();
   bool isLoading = false;
 
-  String? nome;
+  /* String? nome;
   String? email;
   String? cpf;
   String? cep;
@@ -46,13 +47,14 @@ class _ProfilePageState extends State<ProfilePage> {
   String? cidade;
   String? uf;
   String? pais;
-  String? urlAvatar;
+  String? urlAvatar; */
 
   @override
   void initState() {
     super.initState();
     if (widget.user != null) {
       user = widget.user;
+
       cepController.text = widget.user!.cep!;
       ruaController.text = widget.user!.rua!;
       numeroController.text = widget.user!.numero!.toString();
@@ -62,9 +64,9 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-  editPhoto(BuildContext context) async {
+  void editPhoto(BuildContext context) async {
     final picker = ImagePicker();
-    return showModalBottomSheet(
+    await showModalBottomSheet(
       context: context,
       builder: (ctx) {
         return Wrap(
@@ -77,9 +79,9 @@ class _ProfilePageState extends State<ProfilePage> {
                   final pickedFile =
                       await picker.getImage(source: ImageSource.camera);
                   if (pickedFile != null) {
-                    image = File(pickedFile.path);
                     setState(() {
-                      isTemPhoto = true;
+                      user?.pathImage = pickedFile.path;
+
                       Navigator.pop(ctx);
                     });
                   }
@@ -95,11 +97,11 @@ class _ProfilePageState extends State<ProfilePage> {
                 try {
                   final pickedFile =
                       await picker.getImage(source: ImageSource.gallery);
-                  setState(() {
-                    isTemPhoto = true;
-                  });
+
                   if (pickedFile != null) {
-                    image = File(pickedFile.path);
+                    setState(() {
+                      user?.pathImage = pickedFile.path;
+                    });
                     Navigator.pop(ctx);
                   }
                 } catch (e) {
@@ -117,6 +119,10 @@ class _ProfilePageState extends State<ProfilePage> {
     cep = cep.replaceAll('.', '').replaceAll('-', '');
     print(cep);
     Map<String, dynamic> response = await Service().findCep(cep);
+    ruaController.text = response['logradouro'];
+    bairroController.text = response['bairro'];
+    cidadeController.text = response['localidade'];
+    ufController.text = response['uf'];
 
     setState(() {
       isLoading = false;
@@ -128,7 +134,7 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(user!.nome!),
+        title: Text('Profile'),
         centerTitle: true,
       ),
       body: Scrollbar(
@@ -144,28 +150,28 @@ class _ProfilePageState extends State<ProfilePage> {
                     height: 150,
                     child: Stack(
                       children: [
-                        Visibility(
-                          visible: isTemPhoto,
+                        if (user?.pathImage == null)
+                          CircleAvatar(
+                            backgroundImage:
+                                NetworkImage('https://robohash.org/4.png'),
+                            radius: 100,
+                          ),
+                        if (user?.pathImage != null)
+                          CircleAvatar(
+                            backgroundImage: FileImage(File(user!.pathImage!)),
+                            radius: 100,
+                          ),
+                        /* Visibility(
+                          visible: user?.pathImage != null,
                           replacement: CircleAvatar(
-                            backgroundImage: NetworkImage(user!.pathImage!),
+                            backgroundImage:
+                                NetworkImage('https://robohash.org/4.png'),
                             radius: 100,
                           ),
                           child: CircleAvatar(
-                            backgroundImage: FileImage(image),
+                            backgroundImage: FileImage(File(user!.pathImage!)),
                             radius: 100,
                           ),
-                        ),
-                        /*  CircleAvatar(
-                          child: isTemPhoto
-                              ? Image.file(
-                                  _image!,
-                                  fit: BoxFit.cover,
-                                )
-                              : Image.network(
-                                  widget.user!['url']!,
-                                  fit: BoxFit.cover,
-                                ),
-                          radius: 100,
                         ), */
                         Positioned(
                           bottom: -10,
@@ -194,8 +200,16 @@ class _ProfilePageState extends State<ProfilePage> {
                   height: 16,
                 ),
                 ElevatedButton(
-                  onPressed: () {
-                    _formKey.currentState!.validate();
+                  onPressed: () async {
+                    if (!_formKey.currentState!.validate()) return;
+                    _formKey.currentState!.save();
+
+                    user?.id == null
+                        ? await repository.insert(user!)
+                        : await repository.update(user!);
+
+                    Navigator.pushReplacement(
+                        context, MaterialPageRoute(builder: (_) => HomePage()));
                   },
                   child: Text('Salvar'),
                 )
@@ -214,7 +228,7 @@ class _ProfilePageState extends State<ProfilePage> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           TextFormField(
-            initialValue: user!.nome,
+            initialValue: user?.nome,
             validator: (value) {
               if (value!.isEmpty) return 'Preencha o nome';
               return null;
@@ -223,7 +237,7 @@ class _ProfilePageState extends State<ProfilePage> {
               FilteringTextInputFormatter.deny(RegExp(r'[0-9]')),
             ],
             keyboardType: TextInputType.name,
-            onSaved: (value) => nome = value!,
+            onSaved: (value) => user?.nome = value!,
             decoration: InputDecoration(
               labelText: 'Nome Completo',
               border: OutlineInputBorder(),
@@ -237,14 +251,14 @@ class _ProfilePageState extends State<ProfilePage> {
             height: 16,
           ),
           TextFormField(
-            initialValue: user!.email,
+            initialValue: user?.email,
             validator: (value) {
               if (value!.isEmpty) return 'Preencha o email';
               if (!EmailValidator.validate(value)) return 'Email inválido';
 
               return null;
             },
-            onSaved: (value) => email = value!,
+            onSaved: (value) => user?.email = value!,
             keyboardType: TextInputType.emailAddress,
             decoration: InputDecoration(
               labelText: 'Email',
@@ -259,12 +273,12 @@ class _ProfilePageState extends State<ProfilePage> {
             height: 16,
           ),
           TextFormField(
-            initialValue: user!.cpf,
+            initialValue: user?.cpf,
             validator: (value) {
               if (value!.isEmpty) return 'Preencha o CPF';
               return null;
             },
-            onSaved: (value) => cpf = value!,
+            onSaved: (value) => user?.cpf = value!,
             keyboardType: TextInputType.number,
             inputFormatters: [
               FilteringTextInputFormatter.digitsOnly,
@@ -287,6 +301,7 @@ class _ProfilePageState extends State<ProfilePage> {
               Expanded(
                 flex: 2,
                 child: TextFormField(
+                  onSaved: (value) => user?.cep = value!,
                   keyboardType: TextInputType.number,
                   controller: cepController,
                   inputFormatters: [
@@ -340,7 +355,7 @@ class _ProfilePageState extends State<ProfilePage> {
               Expanded(
                 flex: 2,
                 child: TextFormField(
-                  onSaved: (value) => ruaController.text = value!,
+                  onSaved: (value) => user?.rua = value!,
                   validator: (value) {
                     if (value!.isEmpty) return 'Preencha a rua';
                     return null;
@@ -363,7 +378,7 @@ class _ProfilePageState extends State<ProfilePage> {
               Expanded(
                 flex: 1,
                 child: TextFormField(
-                  onSaved: (value) => numero = value!,
+                  onSaved: (value) => user?.numero = int.tryParse(value!) ?? 0,
                   validator: (value) {
                     if (value!.isEmpty) return 'Preencha o numero';
                     return null;
@@ -392,7 +407,7 @@ class _ProfilePageState extends State<ProfilePage> {
             children: [
               Expanded(
                 child: TextFormField(
-                  onSaved: (value) => bairro = value!,
+                  onSaved: (value) => user?.bairro = value!,
                   validator: (value) {
                     if (value!.isEmpty) return 'Preencha o bairro';
                     return null;
@@ -414,7 +429,7 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
               Expanded(
                 child: TextFormField(
-                  onSaved: (value) => cidade = value!,
+                  onSaved: (value) => user?.cidade = value!,
                   validator: (value) {
                     if (value!.isEmpty) return 'Preencha a cidade';
                     return null;
@@ -444,7 +459,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     if (value!.isEmpty) return 'Preencha o UF';
                     return null;
                   },
-                  onSaved: (value) => uf = value!,
+                  onSaved: (value) => user?.uf = value!,
                   controller: ufController,
                   inputFormatters: [
                     FilteringTextInputFormatter.deny(RegExp(r'[0-9]')),
@@ -470,7 +485,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     if (value!.isEmpty) return 'Preencha o Pais';
                     return null;
                   },
-                  onSaved: (value) => pais = value!,
+                  onSaved: (value) => user?.pais = value!,
                   inputFormatters: [
                     FilteringTextInputFormatter.deny(RegExp(r'[0-9]')),
                   ],
