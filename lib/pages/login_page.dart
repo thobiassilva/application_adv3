@@ -1,6 +1,8 @@
 import 'package:application_adv3/pages/home_page.dart';
 import 'package:email_validator/email_validator.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 class LoginPage extends StatefulWidget {
   @override
@@ -23,6 +25,28 @@ class _LoginPageState extends State<LoginPage> {
     return true;
   }
 
+  Future<UserCredential> signInWithGoogle() async {
+    // Trigger the authentication flow
+    final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+
+    // Obtain the auth details from the request
+    final GoogleSignInAuthentication googleAuth =
+        await googleUser!.authentication;
+
+    // Create a new credential
+    final OAuthCredential credential = GoogleAuthProvider.credential(
+      accessToken: googleAuth.accessToken,
+      idToken: googleAuth.idToken,
+    );
+
+    // Once signed in, return the UserCredential
+    final UserCredential result =
+        await FirebaseAuth.instance.signInWithCredential(credential);
+    print(result.user!.displayName);
+    print(result.user!.email);
+    return result;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -43,87 +67,95 @@ class _LoginPageState extends State<LoginPage> {
             child: SingleChildScrollView(
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
-                child: Form(
-                  key: formKey,
-                  child: Column(
-                    children: [
-                      TextFormField(
-                        validator: (value) {
-                          if (value!.isEmpty) return 'Preencha o email.';
-                          if (!EmailValidator.validate(value))
-                            return 'E-mail inválido';
-
-                          return null;
-                        },
-                        initialValue: 'email@email.com',
-                        onSaved: (value) => email = value,
-                        keyboardType: TextInputType.emailAddress,
-                        decoration: InputDecoration(
-                          labelText: 'Email',
-                          labelStyle: TextStyle(
-                            color: Colors.grey[800],
-                          ),
-                          filled: true,
-                          fillColor: Colors.white,
-                        ),
-                      ),
-                      const SizedBox(
-                        height: 16,
-                      ),
-                      TextFormField(
-                        validator: (value) {
-                          if (value!.isEmpty) return 'Preencha a senha.';
-                          return null;
-                        },
-                        initialValue: '1',
-                        onSaved: (value) => senha = value,
-                        obscureText: true,
-                        keyboardType: TextInputType.text,
-                        decoration: InputDecoration(
-                          labelText: 'Senha',
-                          labelStyle: TextStyle(
-                            color: Colors.grey[800],
-                          ),
-                          filled: true,
-                          fillColor: Colors.white,
-                        ),
-                      ),
-                      const SizedBox(
-                        height: 16,
-                      ),
-                      ElevatedButton(
-                        onPressed: () {
-                          setState(() {
-                            isLoading = true;
-                          });
-                          if (doLogin())
-                            Navigator.pushReplacement(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => HomePage(),
-                              ),
-                            );
-                        },
-                        child: Text('Entrar'),
-                        style: ElevatedButton.styleFrom(
-                          primary: Colors.blue[900],
-                          textStyle: TextStyle(
-                            fontSize: 18,
-                          ),
-                          minimumSize: Size(double.infinity, 40),
-                        ),
-                      ),
-                      isLoading
-                          ? LinearProgressIndicator()
-                          : SizedBox(
-                              height: 5,
-                            ),
-                    ],
-                  ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(),
+                  ],
                 ),
               ),
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget loginInput() {
+    return Form(
+      key: formKey,
+      child: Column(
+        children: [
+          TextFormField(
+            validator: (value) {
+              if (value!.isEmpty) return 'Preencha o email.';
+              if (!EmailValidator.validate(value)) return 'E-mail inválido';
+
+              return null;
+            },
+            initialValue: 'email@email.com',
+            onSaved: (value) => email = value,
+            keyboardType: TextInputType.emailAddress,
+            decoration: InputDecoration(
+              labelText: 'Email',
+              labelStyle: TextStyle(
+                color: Colors.grey[800],
+              ),
+              filled: true,
+              fillColor: Colors.white,
+            ),
+          ),
+          const SizedBox(
+            height: 16,
+          ),
+          TextFormField(
+            validator: (value) {
+              if (value!.isEmpty) return 'Preencha a senha.';
+              return null;
+            },
+            initialValue: '1',
+            onSaved: (value) => senha = value,
+            obscureText: true,
+            keyboardType: TextInputType.text,
+            decoration: InputDecoration(
+              labelText: 'Senha',
+              labelStyle: TextStyle(
+                color: Colors.grey[800],
+              ),
+              filled: true,
+              fillColor: Colors.white,
+            ),
+          ),
+          const SizedBox(
+            height: 16,
+          ),
+          ElevatedButton(
+            onPressed: () {
+              setState(() {
+                isLoading = true;
+              });
+              if (doLogin())
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => HomePage(),
+                  ),
+                );
+            },
+            child: Text('Entrar'),
+            style: ElevatedButton.styleFrom(
+              primary: Colors.blue[900],
+              textStyle: TextStyle(
+                fontSize: 18,
+              ),
+              minimumSize: Size(double.infinity, 40),
+            ),
+          ),
+          isLoading
+              ? LinearProgressIndicator()
+              : SizedBox(
+                  height: 5,
+                ),
         ],
       ),
     );
