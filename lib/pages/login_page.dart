@@ -2,6 +2,7 @@ import 'package:application_adv3/pages/home_page.dart';
 import 'package:email_validator/email_validator.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_signin_button/flutter_signin_button.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 class LoginPage extends StatefulWidget {
@@ -70,7 +71,23 @@ class _LoginPageState extends State<LoginPage> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Container(),
+                    Container(
+                      height: 50,
+                      child: SignInButton(
+                        Buttons.Google,
+                        onPressed: () => signInWithGoogle(),
+                      ),
+                    ),
+                    const SizedBox(
+                      height: 16,
+                    ),
+                    Container(
+                      height: 50,
+                      child: SignInButton(
+                        Buttons.FacebookNew,
+                        onPressed: () {},
+                      ),
+                    ),
                   ],
                 ),
               ),
