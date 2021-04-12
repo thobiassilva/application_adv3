@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">application-adv3</string>
+    <string name="facebook_app_id">209724557159210</string> 
+    <string name="fb_login_protocol_scheme">fb209724557159210</string>
+</resources>

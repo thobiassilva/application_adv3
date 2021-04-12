@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_signin_button/flutter_signin_button.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 
 class LoginPage extends StatefulWidget {
   @override
@@ -39,6 +40,22 @@ class _LoginPageState extends State<LoginPage> {
       accessToken: googleAuth.accessToken,
       idToken: googleAuth.idToken,
     );
+
+    // Once signed in, return the UserCredential
+    final UserCredential result =
+        await FirebaseAuth.instance.signInWithCredential(credential);
+    print(result.user!.displayName);
+    print(result.user!.email);
+    return result;
+  }
+
+  Future<UserCredential> signInWithFacebook() async {
+    // Trigger the sign-in flow
+    final LoginResult facebookUser = await FacebookAuth.instance.login();
+
+    // Create a credential from the access token
+    final OAuthCredential credential =
+        FacebookAuthProvider.credential(facebookUser.accessToken!.token);
 
     // Once signed in, return the UserCredential
     final UserCredential result =
@@ -85,7 +102,7 @@ class _LoginPageState extends State<LoginPage> {
                       height: 50,
                       child: SignInButton(
                         Buttons.FacebookNew,
-                        onPressed: () {},
+                        onPressed: () => signInWithFacebook(),
                       ),
                     ),
                   ],
