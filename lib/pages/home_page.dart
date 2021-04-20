@@ -1,9 +1,13 @@
 import 'dart:io';
 
+import 'package:application_adv3/controllers/auth_controller.dart';
 import 'package:application_adv3/data/db.dart';
 import 'package:application_adv3/data/repository.dart';
+import 'package:application_adv3/models/user_auth.dart';
 import 'package:application_adv3/models/user_model.dart';
+import 'package:application_adv3/pages/login_page.dart';
 import 'package:flutter/material.dart';
+import 'package:get_it/get_it.dart';
 
 import 'profile_page.dart';
 
@@ -15,6 +19,7 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   final repository = Repository(MyDatabase());
   Future<List<User>>? futureUsers;
+  final authController = GetIt.I.get<AuthController>();
 
   @override
   void initState() {
@@ -43,6 +48,37 @@ class _HomePageState extends State<HomePage> {
           ),
         ],
       ),
+      drawer: Drawer(
+        child: ListView(
+          children: [
+            ValueListenableBuilder<UserAuth?>(
+              valueListenable: authController.user,
+              builder: (ctx, userAuth, __) {
+                print('HOME PAGE');
+                if (userAuth == null) {
+                  return Container();
+                }
+                return UserAccountsDrawerHeader(
+                  currentAccountPicture: CircleAvatar(
+                    backgroundImage: NetworkImage(userAuth.urlPhoto),
+                  ),
+                  accountName: Text(userAuth.name),
+                  accountEmail: Text(userAuth.email),
+                );
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.exit_to_app),
+              title: Text('Sair'),
+              onTap: () async {
+                await authController.logout();
+                Navigator.pushReplacement(
+                    context, MaterialPageRoute(builder: (_) => LoginPage()));
+              },
+            )
+          ],
+        ),
+      ),
       body: FutureBuilder(
           future: futureUsers,
           builder: (BuildContext context, AsyncSnapshot<List<User>> snapshot) {
@@ -58,7 +94,7 @@ class _HomePageState extends State<HomePage> {
               );
             }
             if (snapshot.hasData) {
-              print('SIM');
+              print('LISTANDO USERS');
               print(snapshot.data);
             }
             final List<User> users = snapshot.data!;
